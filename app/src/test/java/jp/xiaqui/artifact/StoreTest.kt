@@ -36,10 +36,13 @@ class StoreTest {
         val r = Registration("o/r",true,"1",10,"",listOf(h),mapOf(a.identity() to apk),20)
         assertEquals("同一版",rowFor(r,true) { apk }.status)
         val failed = rowFor(r.copy(error="HTTP 404 private detail"),true) { apk }
-        assertTrue(failed.versions.contains("前回 v9 (9)"))
+        assertTrue(failed.versions.contains("前回 v9"))
+        assertFalse(failed.versions.contains("(9)"))
         assertEquals("確認失敗 HTTP 404",failed.status)
         val multiple = rowFor(r.copy(history=listOf(h.copy(assets=listOf(a,a.copy(id=2))))),true) { apk }
         assertTrue(multiple.versions.contains("最新 未確認"))
+        val uninspected = rowFor(r.copy(inspected=emptyMap()),true) { apk }
+        assertEquals("APK要確認",uninspected.status)
         assertEquals("複数APK",multiple.status)
         val legacy = org.json.JSONObject(CatalogCodec.encode(r)).apply { remove("checked") }
         assertEquals(0L,CatalogCodec.decode(legacy.toString()).checked)

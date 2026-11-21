@@ -36,7 +36,7 @@ internal object Installation {
         application?.sourceDir = apk.path
         application?.publicSourceDir = apk.path
         val label = application?.let { runCatching { it.loadLabel(pm).toString() }.getOrNull() } ?: record.packageName
-        return info(record, label)
+        return info(record, label).copy(sdk = ApkSdkReader.read(apk), sdkChecked=true)
     }
 
     @Suppress("DEPRECATION")
@@ -54,7 +54,7 @@ internal object Installation {
 
     fun inspect(context: Context, apk: File): String {
         val meta = describe(context, apk)
-        return "${meta.summary}\n${status(context, meta)}\n署名 SHA-256\n${meta.signer.ifEmpty { "取得不能" }}\n旧版や異なる署名はOSが拒否する場合があります。アンインストールすると対象アプリのデータが消えます。"
+        return "${meta.summary}\n${meta.sdk.label}\n${meta.sdk.detail}\n${status(context, meta)}\n署名 SHA-256\n${meta.signer.ifEmpty { "取得不能" }}\n旧版や異なる署名はOSが拒否する場合があります。アンインストールすると対象アプリのデータが消えます。"
     }
 
     fun permissionSettings(context: Context): Intent? {

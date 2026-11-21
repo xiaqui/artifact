@@ -111,6 +111,7 @@ class PostPhaseTest {
     }
 
     @Test fun sevenRowsAndDetails() {
+        AutoSettings(context).apply { startupEnabled=false; periodicEnabled=false }
         val cat = Catalog(context)
         val regs = (1..7).map { n ->
             val repo = "ui/app$n"
@@ -139,7 +140,7 @@ class PostPhaseTest {
                 }
                 val flat = views.filterIsInstance<TextView>().joinToString { it.text.toString() }
                 assertFalse(flat.contains("internal-tag")); assertFalse(flat.contains("private-name"))
-                assertTrue(flat.contains("前回 0.4 (4)")); assertTrue(flat.contains("HTTP 404"))
+                assertTrue(flat.contains("前回 0.4")); assertFalse(flat.contains("(4)")); assertTrue(flat.contains("HTTP 404"))
                 val decor = activity.window.decorView
                 val bitmap = Bitmap.createBitmap(decor.width, decor.height, Bitmap.Config.ARGB_8888)
                 decor.draw(android.graphics.Canvas(bitmap))

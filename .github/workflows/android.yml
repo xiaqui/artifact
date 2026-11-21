@@ -1,7 +1,7 @@
 name: Personal Release Store
 on:
   push:
-    branches: ['fix/store-screenshot-secure-scope']
+    branches: ['work/auto-update-notify']
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
@@ -58,7 +58,7 @@ jobs:
           grep -E "^(package:|sdkVersion:|targetSdkVersion:)" "$RUNNER_TEMP/badging"
           grep -Fx "sdkVersion:'23'" "$RUNNER_TEMP/badging"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          grep -F "package: name='jp.xiaqui.artifact.store.preview' versionCode='11' versionName='0.7.1'" "$RUNNER_TEMP/badging"
+          grep -F "package: name='jp.xiaqui.artifact.store.preview' versionCode='12' versionName='0.8.0'" "$RUNNER_TEMP/badging"
           stat -c '%s bytes' "$apk"
           cp "$apk" ReleaseStore-preview.apk
           { echo "$GITHUB_SHA"; sha256sum ReleaseStore-preview.apk; } >> "$GITHUB_STEP_SUMMARY"
@@ -111,7 +111,7 @@ jobs:
 
   preview:
     needs: [verify, device]
-    if: github.ref == 'refs/heads/fix/store-screenshot-secure-scope' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[publish-preview]'))
+    if: github.ref == 'refs/heads/work/auto-update-notify' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[publish-preview]'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -122,27 +122,27 @@ jobs:
           name: ReleaseStore-preview.apk
           path: delivery
           skip-decompress: true
-      - name: Verify Release Asset and publish screenshot-security preview
+      - name: Verify Release Asset and publish automatic-update preview
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          apk=delivery/ReleaseStore-v0.7.1-preview.apk
+          apk=delivery/ReleaseStore-v0.8.0-preview.apk
           mv delivery/ReleaseStore-preview.apk "$apk"
           export PREVIEW_TAG="store-preview-${GITHUB_SHA:0:12}"
           export PREVIEW_SOURCE="$GITHUB_SHA"
           sha=$(sha256sum "$apk" | cut -d' ' -f1)
           state=$(python .github/release/check-preview.py)
           if [[ "$state" == absent ]]; then
-            gh release create "$PREVIEW_TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --prerelease --title 'Release Store 0.7.1 · screenshot security scope' --notes "Screenshot-security preview 0.7.1 (11). Normal Store screens are capturable; PAT dialogs remain protected. Source: $GITHUB_SHA. APK SHA-256: $sha. Same fixed xiaqui signing certificate. PR #6, Issue #8/#9, naming and UI redesign are not included."
+            gh release create "$PREVIEW_TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --prerelease --title 'AppDate 0.8.0 · automatic updates' --notes "PR #6 automatic-update preview 0.8.0 (12), including Issue #8 independent switches. Source: $GITHUB_SHA. APK SHA-256: $sha. Same fixed xiaqui signing certificate. Device acceptance pending; not for silent installation. Issue #9, pull-to-refresh, naming overhaul and UI redesign are not included."
           fi
-          if ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$PREVIEW_TAG" --jq '.assets[].name' | grep -Fxq ReleaseStore-v0.7.1-preview.apk; then
+          if ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$PREVIEW_TAG" --jq '.assets[].name' | grep -Fxq ReleaseStore-v0.8.0-preview.apk; then
             gh release upload "$PREVIEW_TAG" "$apk" -R "$GITHUB_REPOSITORY"
           fi
           mkdir -p verify
-          gh release download "$PREVIEW_TAG" -R "$GITHUB_REPOSITORY" --pattern ReleaseStore-v0.7.1-preview.apk --dir verify
-          cmp "$apk" verify/ReleaseStore-v0.7.1-preview.apk
+          gh release download "$PREVIEW_TAG" -R "$GITHUB_REPOSITORY" --pattern ReleaseStore-v0.8.0-preview.apk --dir verify
+          cmp "$apk" verify/ReleaseStore-v0.8.0-preview.apk
           python .github/release/check-preview.py
           gh release edit "$PREVIEW_TAG" -R "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false
           python .github/release/check-preview.py --published

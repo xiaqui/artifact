@@ -32,7 +32,10 @@ class StoreFlowTest {
         val service = StoreService(context,catalog,api)
         var saved: File? = null
         try {
-            service.refresh(r)
+            service.refresh(r, inspectApks = false)
+            val metadata = Catalog(context).get(repo)!!
+            assertTrue(metadata.inspected.isEmpty()) // Metadata checks must not download APK bodies.
+            service.inspect(metadata,metadata.visible.single().assets.single())
             val cached = Catalog(context).get(repo)!!
             val release = cached.visible.single()
             val asset = release.assets.single()

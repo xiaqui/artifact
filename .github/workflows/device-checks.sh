@@ -46,4 +46,4 @@ adb shell run-as "$pkg" mkdir -p files/apks
 adb shell run-as "$pkg" touch files/apks/upgrade-sentinel
 adb install -r delivery/ReleaseStore-preview.apk
 adb shell run-as "$pkg" ls files/apks/upgrade-sentinel
-adb shell dumpsys package "$pkg" | grep 'versionCode=11 '
+adb shell dumpsys package "$pkg" | grep 'versionCode=12 '

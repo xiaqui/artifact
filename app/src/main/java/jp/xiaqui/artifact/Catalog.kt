@@ -8,7 +8,7 @@ import java.util.UUID
 
 internal data class StoreRelease(val id: Long, val tag: String, val published: String,
     val preview: Boolean, val assets: List<ReleaseApk>, val commit: String = "")
-internal data class ApkInfo(val pkg: String, val label: String, val version: String, val code: Long, val signer: String) {
+internal data class ApkInfo(val pkg: String, val label: String, val version: String, val code: Long, val signer: String, val sdk: ApkSdk = ApkSdk(), val sdkChecked: Boolean = false) {
     val summary get() = "$label · $pkg\n$version ($code)"
 }
 internal data class Registration(val repo: String, val previews: Boolean, val revision: String,
@@ -17,7 +17,6 @@ internal data class Registration(val repo: String, val previews: Boolean, val re
     val link get() = ReleaseLink(repo, null, null, true)
     val visible get() = history.filter { previews || !it.preview }
 }
-
 internal fun ReleaseApk.identity() = "$id:$size:${digest.orEmpty()}:$updated"
 
 internal fun repoName(raw: String): String {
@@ -47,9 +46,9 @@ internal fun compareInstalled(candidate: ApkInfo, installed: ApkInfo?, absenceKn
 
 private fun <T> JSONArray.mapRows(read: (JSONObject) -> T) = (0 until length()).map { read(getJSONObject(it)) }
 private fun ApkInfo.json() = JSONObject().put("package", pkg).put("label", label).put("version", version)
-    .put("code", code).put("signer", signer)
+    .put("code", code).put("signer", signer).put("sdkChecked",sdkChecked).put("minSdk",sdk.min).put("targetSdk",sdk.target).put("maxSdk",sdk.max)
 private fun metadata(j: JSONObject) = ApkInfo(j.getString("package"), j.getString("label"),
-    j.getString("version"), j.getLong("code"), j.getString("signer"))
+    j.getString("version"), j.getLong("code"), j.getString("signer"), ApkSdk(j.optInt("minSdk"),j.optInt("targetSdk"),j.optInt("maxSdk")),j.optBoolean("sdkChecked"))
 
 internal object CatalogCodec {
     fun encode(r: Registration): String {

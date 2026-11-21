@@ -38,7 +38,7 @@ internal class GitHubReleases(private val auth: ReleaseAuth,
                 when (val status = connection.responseCode) {
                     200 -> return connection.inputStream.use(consume)
                     301, 302, 303, 307, 308 -> {
-                        if (!binary) throw ImportFailure("Releaseの移転先URLを共有し直してください。")
+                        if (!binary) throw ImportFailure("repo移転の同一性を追跡できません。新しい名前で別登録してください。旧登録・履歴は保持しています。")
                         val location = connection.getHeaderField("Location") ?: throw ImportFailure("転送先がありません。")
                         hop++
                         url = URL(url, location)
@@ -150,10 +150,15 @@ internal class GitHubReleases(private val auth: ReleaseAuth,
         throw ImportFailure("このReleaseのAsset数が上限（1,000件）を超えています。")
     }
 
-    fun download(link: ReleaseLink, apk: ReleaseApk, target: File) {
+    fun download(link: ReleaseLink, apk: ReleaseApk, target: File, allowed: () -> Unit = {}) {
         if (apk.size !in 1..MAX_INPUT) throw ImportFailure("APKがサイズ上限外です。")
         val sha = MessageDigest.getInstance("SHA-256")
-        read(link, "${link.apiBase}/assets/${apk.id}", true) { stream ->
+        allowed()
+        read(link, "${link.apiBase}/assets/${apk.id}", true) { input ->
+            val stream = object : java.io.FilterInputStream(input) {
+                override fun read(b: ByteArray, off: Int, len: Int): Int { allowed(); return super.read(b,off,len) }
+                override fun read(): Int { allowed(); return super.read() }
+            }
             val count = target.outputStream().use { transfer(DigestInputStream(stream, sha), it, apk.size) }
             if (count != apk.size) throw ImportFailure("APKの取得が途中で終了しました。")
         }

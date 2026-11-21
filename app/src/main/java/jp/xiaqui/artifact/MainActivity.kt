@@ -21,6 +21,7 @@ open class MainActivity : Activity() {
     private val releases by lazy { GitHubReleases(auth) }
     private var diagnostic = ""
     private var saved: File? = null
+    private var protectedApk: File? = null
     private var details = ""
     private var reading: android.os.CancellationSignal? = null
     private val shelf by lazy { SavedShelf(this) }
@@ -223,7 +224,13 @@ open class MainActivity : Activity() {
         }) { (file, metadata) -> confirm(file, metadata) }
     }
 
+    override fun onResume() { super.onResume(); AutoUpdates.reconcileAsync(this) }
+
     private fun showSaved(file: File) {
+        if (protectedApk != file) {
+            protectedApk?.let(shelf::release)
+            shelf.protect(file); protectedApk=file
+        }
         work("APKを確認中…", { Installation.inspect(this, file) }) { confirm(file, it) }
     }
 
@@ -282,6 +289,7 @@ open class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        protectedApk?.let(shelf::release); protectedApk=null
         generation++
         task?.cancel(true)
         val old = session
